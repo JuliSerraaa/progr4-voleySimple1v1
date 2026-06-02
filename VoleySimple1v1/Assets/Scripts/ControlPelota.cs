@@ -13,14 +13,14 @@ public class ControlPelota : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         posicionInicial = transform.position; // Guardamos dónde empieza arriba de la red
-        
+
         SakarAleatorio();
     }
 
     public void SakarAleatorio()
     {
         // Reseteamos velocidad por si venía moviéndose
-        rb.linearVelocity = Vector3.zero; 
+        rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
         transform.position = posicionInicial;
 
@@ -40,26 +40,22 @@ public class ControlPelota : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        // Detectamos si tocó el suelo
         if (collision.gameObject.name.ToLower().Contains("cancha") || collision.gameObject.name.ToLower().Contains("floor") || collision.gameObject.name.ToLower().Contains("cube"))
         {
-            // Guíate por la posición X de la pelota para saber de qué lado cayó
-            // Asumiendo que la red está en la posición X = 0
+            // IMPORTANTE: Asegurate de saber si tu Player 1 está en el lado izquierdo (X negativo) o derecho (X positivo)
+            // En este ejemplo: Lado Izquierdo = Player 1, Lado Derecho = Player 2
             if (transform.position.x < 0)
             {
-                // Cayó del lado izquierdo -> ¡Punto para el Jugador 2!
-                Debug.Log("¡Punto para el Player 2!");
-                // Aquí llamaremos al script del puntaje más adelante
+                // Si pica del lado izquierdo, el punto es para el rival (Player 2)
+                if (GestorPuntaje.instancia != null) GestorPuntaje.instancia.SumarPuntoPlayer2();
             }
             else
             {
-                // Cayó del lado derecho -> ¡Punto para el Jugador 1!
-                Debug.Log("¡Punto para el Player 1!");
-                // Aquí llamaremos al script del puntaje más adelante
+                // Si pica del lado derecho, el punto es para el Player 1
+                if (GestorPuntaje.instancia != null) GestorPuntaje.instancia.SumarPuntoPlayer1();
             }
 
-            // Re-sacamos la pelota después de un punto para seguir jugando
-            Invoke("SakarAleatorio", 1.5f); // Espera 1.5 segundos antes de sacar otra vez
+            Invoke("SakarAleatorio", 1.5f);
         }
     }
 }
