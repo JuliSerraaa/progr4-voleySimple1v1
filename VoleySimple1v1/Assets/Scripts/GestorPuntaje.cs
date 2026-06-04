@@ -1,9 +1,10 @@
 using UnityEngine;
-using TMPro; // IMPORTANTE: Para controlar el texto de TextMeshPro
+using TMPro;
+using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 
 public class GestorPuntaje : MonoBehaviour
 {
-    // Instancia estática para poder llamarlo desde el script de la pelota fácilmente
     public static GestorPuntaje instancia;
 
     [Header("Componente de Texto")]
@@ -11,6 +12,7 @@ public class GestorPuntaje : MonoBehaviour
 
     private int puntosP1 = 0;
     private int puntosP2 = 0;
+    private bool juegoTerminado = false;
 
     void Awake()
     {
@@ -19,24 +21,63 @@ public class GestorPuntaje : MonoBehaviour
 
     void Start()
     {
+        Time.timeScale = 1f; // Asegura que el tiempo corra normal al iniciar/reiniciar
         ActualizarMarcador();
+    }
+
+    void Update()
+    {
+        // Si terminó el juego y tocan la R, se reinicia la partida
+        if (juegoTerminado && Keyboard.current != null && Keyboard.current[Key.R].wasPressedThisFrame)
+        {
+            ReiniciarJuego();
+        }
     }
 
     public void SumarPuntoPlayer1()
     {
+        if (juegoTerminado) return;
         puntosP1++;
         ActualizarMarcador();
+        ChequearGanador();
     }
 
     public void SumarPuntoPlayer2()
     {
+        if (juegoTerminado) return;
         puntosP2++;
         ActualizarMarcador();
+        ChequearGanador();
     }
 
     void ActualizarMarcador()
     {
-        // Cambia el texto en pantalla (ej: "3 - 2")
-        textoPuntaje.text = puntosP1 + " - " + puntosP2;
+        if (textoPuntaje != null)
+            textoPuntaje.text = puntosP1 + " - " + puntosP2;
+    }
+
+    void ChequearGanador()
+    {
+        if (puntosP1 >= 5) TerminarPartida("¡GANÓ EL JUGADOR 1!");
+        else if (puntosP2 >= 5) TerminarPartida("¡GANÓ EL JUGADOR 2!");
+    }
+
+    void TerminarPartida(string mensajeGanador)
+    {
+        juegoTerminado = true;
+        if (textoPuntaje != null)
+            textoPuntaje.text = mensajeGanador + "\n<size=22>Presioná 'R' para revancha</size>";
+
+        Time.timeScale = 0f; // Pausa las físicas y movimientos globales
+    }
+
+    public bool TextoContieneGanador()
+    {
+        return juegoTerminado;
+    }
+
+    public void ReiniciarJuego()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

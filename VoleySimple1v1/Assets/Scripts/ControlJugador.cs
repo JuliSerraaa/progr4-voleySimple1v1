@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Controls; // Agregamos esto para que entienda los controles de botones
+using UnityEngine.InputSystem.Controls;
 
 public class ControlJugador : MonoBehaviour
 {
@@ -14,19 +14,29 @@ public class ControlJugador : MonoBehaviour
     public string teclaIzquierda = "a";
     public string teclaDerecha = "d";
     public string teclaSaltar = "space";
+    public string teclaPegar = "f";
 
     [Header("Mecanica de Salto y Slider")]
     public Slider sliderPotencia;
     public float fuerzaSaltoMaxima = 15f;
     public float velocidadBarra = 2f;
 
+    [Header("Mecanica de Golpe Táctico")]
+    public Transform canchaRival;
+    public float distanciaParaPegar = 2.5f;
+    public float fuerzaGolpeHorizontal = 12f;
+    public float fuerzaGolpeVertical = 5f;
+    public float largoCancha = 8f;
+
     private Rigidbody rb;
     private bool estaEnElSuelo = true;
     private float tiempoSlider = 0f;
+    private GameObject pelota;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        pelota = GameObject.Find("Pelota");
 
         if (sliderPotencia != null)
         {
@@ -37,21 +47,27 @@ public class ControlJugador : MonoBehaviour
 
     void Update()
     {
-        // Movimiento del slider en vaivén
+       
         if (estaEnElSuelo && sliderPotencia != null)
         {
             tiempoSlider += Time.deltaTime * velocidadBarra;
             sliderPotencia.value = Mathf.PingPong(tiempoSlider, 1f);
         }
 
-        // Detectar el salto de forma segura
         if (Keyboard.current != null)
         {
-            // Buscamos la tecla y la convertimos en un KeyControl válido
+            
             KeyControl botonSalto = Keyboard.current[teclaSaltar] as KeyControl;
             if (botonSalto != null && botonSalto.wasPressedThisFrame && estaEnElSuelo)
             {
                 Saltar();
+            }
+
+            
+            KeyControl botonPegar = Keyboard.current[teclaPegar] as KeyControl;
+            if (botonPegar != null && botonPegar.wasPressedThisFrame)
+            {
+                PegarALaPelota();
             }
         }
     }
@@ -62,7 +78,6 @@ public class ControlJugador : MonoBehaviour
 
         Vector3 movimiento = Vector3.zero;
 
-        // Buscamos cada tecla aclarándole a Unity que es un botón/tecla (KeyControl)
         KeyControl btnArriba = Keyboard.current[teclaArriba] as KeyControl;
         KeyControl btnAbajo = Keyboard.current[teclaAbajo] as KeyControl;
         KeyControl btnDerecha = Keyboard.current[teclaDerecha] as KeyControl;
@@ -80,15 +95,53 @@ public class ControlJugador : MonoBehaviour
     void Saltar()
     {
         float porcentajePotencia = 0.2f;
-
-        if (sliderPotencia != null)
-        {
-            porcentajePotencia = sliderPotencia.value;
-        }
+        if (sliderPotencia != null) porcentajePotencia = sliderPotencia.value;
 
         float fuerzaFinal = porcentajePotencia * fuerzaSaltoMaxima;
         rb.AddForce(Vector3.up * fuerzaFinal, ForceMode.Impulse);
         estaEnElSuelo = false;
+    }
+
+    void PegarALaPelota()
+    {
+        if (pelota == null || canchaRival == null) return;
+
+        float distancia = Vector3.Distance(transform.position, pelota.transform.position);
+
+        if (distancia <= distanciaParaPegar)
+        {
+            Rigidbody rbPelota = pelota.GetComponent<Rigidbody>();
+            if (rbPelota != null)
+            {
+                rbPelota.linearVelocity = Vector3.zero;
+
+                
+                float destinoZ = transform.position.z;
+
+                
+                float distanciaALaRed = Mathf.Abs(transform.position.x);
+                float profundidadX = largoCancha - distanciaALaRed;
+                profundidadX = Mathf.Clamp(profundidadX, 1.5f, largoCancha);
+
+                float signoX = (canchaRival.position.x > 0) ? 1f : -1f;
+                float destinoX = (canchaRival.position.x) + (profundidadX * signoX);
+
+                
+                float dispersionX = Random.Range(-0.8f, 0.8f);
+                float dispersionZ = Random.Range(-0.8f, 0.8f);
+
+                Vector3 destinoInteligente = new Vector3(destinoX + dispersionX, canchaRival.position.y, destinoZ + dispersionZ);
+                Vector3 direccionCancha = (destinoInteligente - pelota.transform.position).normalized;
+
+                Vector3 fuerzaFinal = new Vector3(
+                    direccionCancha.x * fuerzaGolpeHorizontal,
+                    fuerzaGolpeVertical,
+                    direccionCancha.z * fuerzaGolpeHorizontal
+                );
+
+                rbPelota.AddForce(fuerzaFinal, ForceMode.Impulse);
+            }
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
