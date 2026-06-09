@@ -21,13 +21,13 @@ public class GestorPuntaje : MonoBehaviour
 
     void Start()
     {
-        Time.timeScale = 1f; // Asegura que el tiempo corra normal al iniciar/reiniciar
+        Time.timeScale = 1f; 
         ActualizarMarcador();
     }
 
     void Update()
     {
-        // Si terminó el juego y tocan la R, se reinicia la partida
+        
         if (juegoTerminado && Keyboard.current != null && Keyboard.current[Key.R].wasPressedThisFrame)
         {
             ReiniciarJuego();
@@ -68,7 +68,7 @@ public class GestorPuntaje : MonoBehaviour
         if (textoPuntaje != null)
             textoPuntaje.text = mensajeGanador + "\n<size=22>Presioná 'R' para revancha</size>";
 
-        Time.timeScale = 0f; // Pausa las físicas y movimientos globales
+        Time.timeScale = 0f;
     }
 
     public bool TextoContieneGanador()
